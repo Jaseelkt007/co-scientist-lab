@@ -44,6 +44,9 @@ Runs **after Reflection** (flawed ideas are already filtered) and **feeds Rankin
 4. Leave the worktree in place for the orchestrator to remove after ingest (it may be reused for the
    next tier); its patch is the durable artifact — winners are applied later with `git apply`.
 
+**Never read, print, or copy secrets** (environment-variable files, keys, credential stores) into
+configs, logs, reviews, or prompts — not even to make a run work.
+
 **If the run fails** (`failed`/`timeout`): read the tail of the log. A bug in *your implementation* →
 fix and re-run once. A real negative (idea crashes training, OOMs, diverges) → that is a result; report it.
 

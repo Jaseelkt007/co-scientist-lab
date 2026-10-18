@@ -13,10 +13,14 @@ Look for how this project already measures itself, so your questions come with g
 - training or eval entry points: `train*.py`, `eval*.py`, `benchmark*`, `score*`, `scripts/`, notebooks
 - test suites (`pytest`, `npm test`, `cargo test`, `go test`) and benchmarks (`pytest-benchmark`,
   `hyperfine`, `criterion`, `k6`, `lighthouse`)
-- config systems (`configs/*.yaml`, Hydra, argparse flags, `.env`) → candidate **knobs**
-- prior results (`results/`, `benchmark.md`, wandb/mlflow logs) → candidate **baseline + target**
+- config systems (`configs/*.yaml`, Hydra, argparse flags) → candidate **knobs**
+- prior results (`results/`, `benchmark.md`, local CSV/TensorBoard logs) → candidate **baseline + target**
 - `git status` (clean tree? uncommitted work?) and what is gitignored (data/, checkpoints/ — matters
   for worktrees)
+
+**Never open secret or environment-variable files, keys, or credential stores** while inspecting —
+the lab needs configs and results, not secrets. If a command needs credentials, the user's own shell
+already provides them.
 
 If there is an obvious cheap command, **dry-run it once** (with a short timeout) to see the real output
 format — that is how you write a metric pattern that actually matches.

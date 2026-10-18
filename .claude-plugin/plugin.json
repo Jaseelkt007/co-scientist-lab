@@ -1,7 +1,7 @@
 {
   "name": "co-scientist-lab",
   "displayName": "Co-Scientist Lab",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Co-Scientist with an Experiment agent: it tests each idea by running your project's own training, benchmark or test command, ranks ideas on measured results instead of argument, and loops until your target metric is reached or the round budget is spent.",
   "author": {
     "name": "Mohammed Jaseel Kunnathodika",
