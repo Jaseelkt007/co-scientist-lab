@@ -14,6 +14,7 @@ Instead of answering a hard, open-ended question *once*, a **team of specialized
 number of rounds, or **until your target metric is reached**.
 
 ![The Co-Scientist Lab discovery loop](docs/agent_orchestration.png)
+<sub>Diagram generated with an AI image model.</sub>
 
 ---
 

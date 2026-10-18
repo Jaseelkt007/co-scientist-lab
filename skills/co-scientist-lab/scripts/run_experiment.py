@@ -106,13 +106,13 @@ def all_metric_specs(lab):
     return [m["primary"]] + list(m.get("guardrails", []))
 
 
-def run_command(cmd, workdir, env, log_path, timeout):
+def run_command(cmd, workdir, log_path, timeout):
     start = time.time()
     with open(log_path, "w", encoding="utf-8", errors="replace") as log:
         log.write(f"$ {cmd}\n")
         log.flush()
         kw = {"start_new_session": True} if os.name != "nt" else {}
-        p = subprocess.Popen(cmd, shell=True, cwd=workdir, env=env, stdout=log,
+        p = subprocess.Popen(cmd, shell=True, cwd=workdir, stdout=log,
                              stderr=subprocess.STDOUT, **kw)
         try:
             code = p.wait(timeout=timeout)
@@ -312,10 +312,8 @@ def main():
                            log=os.path.abspath(a.log))
                 lp = a.log
             else:
-                env = dict(os.environ, COSCI_ID=hid, COSCI_TIER=tier, COSCI_CONFIG=cfg_path,
-                           COSCI_OUT_DIR=out_dir, COSCI_RUN_DIR=run_dir)
                 lp = log_path if repeats == 1 else log_path.replace(".log", f".r{i + 1}.log")
-                status, code, wall = run_command(cmd, workdir, env, lp, t.get("timeout_s"))
+                status, code, wall = run_command(cmd, workdir, lp, t.get("timeout_s"))
                 rec.update(status=status, exit_code=code, wall_s=wall, source="run")
                 if repeats > 1:
                     rec["log"] = os.path.relpath(lp, run_dir)
