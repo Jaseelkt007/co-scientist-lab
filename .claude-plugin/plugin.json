@@ -1,7 +1,8 @@
 {
   "name": "co-scientist-lab",
-  "version": "0.2.0",
-  "description": "Measurement-grounded multi-agent discovery engine: Google's AI Co-Scientist plus an Experiment agent that runs each idea through your project's own command and ranks on measured results. Asks a few setup questions, then loops for N rounds or until your target metric is hit.",
+  "displayName": "Co-Scientist Lab",
+  "version": "0.2.1",
+  "description": "Co-Scientist with an Experiment agent: it tests each idea by running your project's own training, benchmark or test command, ranks ideas on measured results instead of argument, and loops until your target metric is reached or the round budget is spent.",
   "author": {
     "name": "Mohammed Jaseel Kunnathodika",
     "url": "https://github.com/Jaseelkt007"
@@ -9,5 +10,13 @@
   "homepage": "https://github.com/Jaseelkt007/co-scientist-lab",
   "repository": "https://github.com/Jaseelkt007/co-scientist-lab",
   "license": "MIT",
-  "keywords": ["research", "experiments", "hypothesis", "multi-agent", "autoresearch", "elo", "co-scientist"]
+  "keywords": [
+    "research",
+    "experiments",
+    "hypothesis",
+    "multi-agent",
+    "autoresearch",
+    "elo",
+    "co-scientist"
+  ]
 }

@@ -165,6 +165,29 @@ claude --plugin-dir .      # load this checkout for one session without installi
 
 ---
 
+## What this plugin runs and accesses
+
+- **Contents:** one skill (`co-scientist-lab`) made of Markdown instructions, plus three scripts. It has no
+  hooks, no MCP servers and no background processes, and it installs no packages.
+- **Local commands, all visible as normal Claude Code tool calls you can approve or deny:**
+  - `python …/scripts/elo.py` keeps the tournament state.
+  - `python …/scripts/run_experiment.py` runs experiments.
+
+  Both use only the Python standard library and write only to `.coscientist_runs/<slug>/` in your project.
+- **Your project's own command:** in measured mode, the harness runs **the command you confirmed at
+  setup** (stored in `lab.json`), with your permissions, in your project folder, or, in code mode, in a
+  temporary `git worktree` outside it. It never changes your working tree, and winning code changes are
+  saved as patch files for you to apply yourself. Commands in a tier you mark as `manual` are only
+  printed, never run.
+- **Reading your repo:** during setup, Claude reads project files (README, scripts, configs, earlier
+  results) to suggest the command and metric.
+- **Subagents:** it starts Claude subagents through Claude Code's own `Agent` tool.
+- **Network:** the plugin itself sends nothing anywhere. Agents may use Claude's built-in web search and
+  fetch to check ideas against published work. Any network access your own experiment command makes is
+  up to that command.
+- **Data:** it has no telemetry and no analytics, and it collects no personal data. Results, logs and
+  patches stay in the run folder in your project.
+
 ## Credits & attribution
 
 - **Method:** a faithful replica + extension of **Google's AI Co-Scientist** — Gottweis et al.,
