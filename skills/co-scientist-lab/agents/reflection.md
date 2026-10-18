@@ -60,3 +60,10 @@ can be fixed later by Evolution). Optional probing-question mode: Question / Ans
 ## 1.5 🟡 Simulation review (reconstructed)
 Simulate the mechanism/experiment step by step; at each step note what must hold and where it could fail;
 summarize the most likely failure scenarios.
+
+## 1.6 🔵 Lab addition — testability triage (measured mode only)
+For each hypothesis you pass, also state: **testable-now** (maps onto `lab.json`'s editable surface /
+knobs), **needs-code** (name the missing knob/file), or **untestable here** (keep it as a reasoned idea).
+Flag ideas that could only improve the metric by changing what is measured (frozen paths, eval data, the
+metric itself) — reject those. If an empirical review already exists in `reviews/<id>.md`, weigh it: a
+measured result outranks your reasoning about the same question.

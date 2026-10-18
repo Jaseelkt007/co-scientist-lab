@@ -1,0 +1,34 @@
+{
+  "mode": "measured",
+  "project_dir": "/path/to/process-logic",
+  "change_mode": "config",
+  "editable": ["configs/"],
+  "frozen": ["data/", "score.py", "benchmark_table.py"],
+  "tiers": {
+    "smoke": {
+      "command": "python train.py --config {config} --max-iters 150 --out {out_dir} && python score.py --run {out_dir} --ood-folds 3",
+      "timeout_s": 900
+    },
+    "full": {
+      "command": "sbatch jobs/full_ood.sh {config}",
+      "manual": true
+    }
+  },
+  "metrics": {
+    "primary": { "name": "ood_top1", "goal": "max", "source": "json_file", "path": "{out_dir}/metrics.json", "key": "ood.nextstep.top1" },
+    "guardrails": [
+      { "name": "id_top1", "goal": "max", "source": "json_file", "path": "{out_dir}/metrics.json", "key": "id.nextstep.top1", "tolerance": 0.005 }
+    ]
+  },
+  "noise": 0.01,
+  "stop": {
+    "max_rounds": 4,
+    "target": 0.6,
+    "target_tier": "smoke",
+    "stop_on_target": false,
+    "plateau_rounds": 2,
+    "max_experiments_per_round": 4,
+    "max_experiments": 24
+  },
+  "autonomy": "autonomous"
+}

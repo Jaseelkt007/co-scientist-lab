@@ -43,3 +43,18 @@ Available tasks: Generation, Reflection, Ranking, Proximity, Evolution, MetaRevi
 
 Output JSON: {"enqueue":[{"task","count"}...], "terminate":bool, "rationale":"..."}.
 ```
+
+## C. 🔵 Lab setup — adapt the engine to this project  (run once, before A is confirmed)
+Follow `references/lab-config.md`: **inspect** the project for how it already measures itself, **ask**
+two short `AskUserQuestion` rounds (behaviour: mode / how ideas are applied / stop rule / autonomy; then
+numbers: command / metric + direction / target / max rounds), **confirm** guardrails, frozen and editable
+paths, timeout, tiers and noise in one message, then write `lab.json` and **measure the baseline**.
+Present `config.md` + `lab.json` + the baseline together at checkpoint #1. Ask few questions: every
+option should be a concrete guess from what you found, not a blank.
+
+## D. 🔵 Lab termination (replaces the judgement call in B when `lab.json` exists)
+At the end of every round run `python "${CLAUDE_SKILL_DIR}/scripts/elo.py" lab-status <run> --round <n> --record`
+and obey its `decision`. It applies the user's stop rule deterministically: target reached at
+`target_tier` (if `stop_on_target`), `max_rounds`, `max_experiments`, or plateau (best measured value —
+or top Elo in reasoning mode — not improving beyond noise for `plateau_rounds`). You may stop *earlier*
+only if the user asks or a hard blocker appears; never run past a `stop`.

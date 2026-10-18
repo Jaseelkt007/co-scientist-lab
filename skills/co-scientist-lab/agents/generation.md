@@ -80,3 +80,16 @@ test for each; aggregate validated chains into complete falsifiable hypotheses.
 ## 1.4 🟡 Research expansion (reconstructed)
 Given existing hypotheses + `research_overview.md` + `meta_review.md`, map covered ground, identify
 under-explored/unconventional directions, and generate new hypotheses targeting those gaps.
+
+## 1.5 🔵 Lab addition — make every hypothesis testable here (measured mode only)
+When `lab.json` has `mode: "measured"`, add to each returned hypothesis an `experiment` field describing
+how it maps onto this project's editable surface — the Experiment agent builds on it:
+```jsonc
+{"summary": "...", "category": "...", "text": "...",
+ "experiment": {"overrides": {"lr": 0.0005, "dropout": 0.1},          // config mode
+                "code_change": "add RoPE option to model.py attention",  // code mode (sketch)
+                "predicts": "val_acc ↑ ~1-2 pts; id_acc unchanged"}}
+```
+Read `experiments/*.json` first: don't re-propose an idea that was already measured (unless you change it
+in a way you can name), and build on what measurably worked. The `predicts` line makes the idea
+falsifiable — the result will be judged against it. (Comments above are illustrative — return plain JSON.)

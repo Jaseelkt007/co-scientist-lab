@@ -35,7 +35,12 @@ Everything lives under `.coscientist_runs/<slug>/`. Files are the durable state 
     "status": "new|reviewed|rejected|top",
     "parents": [],
     "origin": "generation:debate | evolution:combination | scientist",
-    "scores": {"correctness": 0, "novelty": 0, "quality": 0}
+    "scores": {"correctness": 0, "novelty": 0, "quality": 0},
+    "experiment": {"overrides": {}, "code_change": "", "predicts": ""},
+    "empirical_status": "unvalidated|<tier name>",
+    "experiments": {"smoke": {"status": "done", "verdict": "improves", "value": 0.76,
+                              "improvement": 0.06, "target_met": false,
+                              "result": "experiments/h1.smoke.json"}}
   }
 ]
 ```
@@ -76,3 +81,17 @@ verdict: pass|reject
 
 ## `meta_review.md`  — overwritten each round; appended to EVERY agent prompt next round.
 ## `research_overview.md` — final synthesis presented to the user.
+
+## Lab additions (measured mode) — see `references/lab-config.md`
+- `lab.json` — the project harness: command per tier, metrics, target, stop rule, editable/frozen paths.
+  Written **once** at setup by the orchestrator.
+- `experiments/baseline.<tier>.json` — the unmodified project's metrics (+ `noise` from `--repeats`).
+- `experiments/<id>.<tier>.json` — one result record per run, written by `run_experiment.py`:
+  `status` (done|failed|timeout|invalid), `metrics`, `baseline`, `delta`, `improvement`, `noise`,
+  `guardrails`, `verdict` (improves|neutral|worse|regresses-guardrail|failed|timeout|touched-frozen|unbaselined),
+  `target_met`, `command`, `log`, and in code mode `changed_files`, `outside_editable`, `patch`.
+- `experiments/<id>.<tier>.log` — full command output; `experiments/<id>.<tier>/` — `{out_dir}` + `change.patch`.
+- `experiments/<id>.config.json` — config-mode overrides for that hypothesis.
+- `progress.json` — per-round `{round, best_value, best_id, top_elo, experiments}`, written only by
+  `elo.py lab-status --record`; drives plateau detection.
+- `experiment_queue.md` — manual-tier runs waiting for the user (id, rendered command, why).

@@ -38,3 +38,11 @@ This overview is also fed back to the Generation agent (research-expansion) next
 ## 1.3 🟡 Research-contact identification (reconstructed; output schema = A.22)
 From the cited literature, suggest qualified domain experts to review/collaborate, with a specific reason
 each fits. Append to `research_overview.md`.
+
+## 1.4 🔵 Lab addition — progress against the target (measured mode only)
+In `meta_review.md`, add a short **Measured so far** block above the critique: baseline → best value
+(id, tier), target and % of the way (from `elo.py lab-status`), and two lists — **confirmed**
+(improves beyond noise, guardrails intact) vs **speculative / refuted** (unmeasured, within noise, or
+negative). Name the lesson each negative teaches. In `research_overview.md`, put the measured winners
+first, with the command + patch/overrides that reproduce each, and list the **next experiment queue**
+(manual-tier finalists, needs-code ideas worth implementing).

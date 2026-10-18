@@ -63,3 +63,9 @@ cite parents and why the result is stronger.
 
 ## 1.5 🟡 Simplification (reconstructed)
 Strip non-essential complexity; restate the core claim plainly; give the simplest decisive falsifying test.
+
+## 1.6 🔵 Lab addition — evolve from measurements (measured mode only)
+Prefer parents with **measured** gains. Use the numbers: combine ideas whose gains look independent;
+when an idea `regresses-guardrail`, try a variant that keeps the gain without the regression; when a
+change was neutral, don't re-propose it with cosmetic tweaks. Carry the `experiment` field forward
+(updated overrides / code sketch + `predicts`) so the child can be tested immediately.

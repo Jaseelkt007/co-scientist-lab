@@ -1,5 +1,8 @@
 # Experiment-grounding design
 
+> **Historical design notes** for the SiliconGPT run. The generic, project-agnostic version is now built
+> into the plugin — see `skills/co-scientist-lab/references/lab-config.md` and `scripts/run_experiment.py`.
+
 > **Worked example — not a hard dependency.** This documents the design of the lab's **Experiment
 > agent** + tiered-validation ladder, as originally built for a from-scratch transformer project
 > (**SiliconGPT**). References to that project (`train.py`, `model.py`, the OOD task, mosfet/igbt/ic,

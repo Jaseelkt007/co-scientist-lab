@@ -82,3 +82,13 @@ should succinctly state the rationale for the selection.
 Then, indicate the superior hypothesis by writing the phrase "better idea: ", followed by "1" (for
 hypothesis 1) or "2" (for hypothesis 2).
 ```
+
+## 1.3 🔵 Lab addition — measured evidence in the tournament (measured mode only)
+Before each match the orchestrator adds to `{notes}` both hypotheses' measured results (from
+`hypotheses.json → experiments`: tier, value, improvement vs baseline, noise, verdict) and the target.
+Judging rules, in order:
+1. A **full-tier** result beats a smoke-tier result beats no measurement — on the same question.
+2. A result **inside the noise band** is evidence of *no measurable effect*, not a win.
+3. `regresses-guardrail`, `touched-frozen`, or `failed` due to the idea itself count **against** it.
+4. Only when evidence is equal (both unmeasured, or both within noise) decide on reasoning as usual.
+The verbatim prompts above are unchanged; this only changes what goes into `{notes}`.

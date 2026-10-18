@@ -12,6 +12,8 @@ Usage:
   python elo.py setstatus <run_dir> <id> <new|reviewed|rejected|top>
   python elo.py proximity <run_dir> <graph.json>
   python elo.py rank      <run_dir> [--top N]
+  python elo.py ingest-experiment <run_dir> <experiments/<id>.<tier>.json>
+  python elo.py lab-status <run_dir> [--round N --record]
 
 All writes are atomic (temp file + os.replace). Mutate state through THIS script and
 SEQUENTIALLY — never hand-write the JSON or run two writers at once (it races/corrupts).
@@ -175,6 +177,10 @@ def cmd_ingest(a):
                          "elo": START_ELO, "status": "new",
                          "parents": item.get("parents", []), "origin": a.origin,
                          "scores": {}})
+            if item.get("experiment"):
+                # lab: how the idea maps onto the editable surface (overrides / code-change sketch)
+                hyps[-1]["experiment"] = item["experiment"]
+                hyps[-1]["empirical_status"] = "unvalidated"
             t["elo"][hid] = START_ELO
             added.append(hid)
         _save(hp, hyps)
@@ -203,7 +209,140 @@ def cmd_rank(a):
     live.sort(key=lambda x: x.get("elo", START_ELO), reverse=True)
     top = live[: a.top] if a.top else live
     for i, x in enumerate(top, 1):
-        print(f"{i:2}. [{x.get('elo', START_ELO):7.1f}] {x['id']:6} {x.get('summary','')[:90]}")
+        ev = x.get("experiments") or {}
+        tag = ""
+        if ev:
+            tier = x.get("empirical_status")
+            if tier not in ev:
+                tier = next(iter(ev))
+            r = ev[tier]
+            v = r.get("value")
+            tag = f" <{tier}: {r.get('verdict')}{'' if v is None else f' {v:g}'}>"
+        print(f"{i:2}. [{x.get('elo', START_ELO):7.1f}] {x['id']:6} {x.get('summary','')[:80]}{tag}")
+
+
+def _tier_order(lab):
+    return list((lab or {}).get("tiers") or {"smoke": 0, "full": 0})
+
+
+def cmd_ingest_experiment(a):
+    """Attach a run_experiment.py result record to its hypothesis (lab extension).
+    Sets hypothesis.experiments[<tier>] and empirical_status = highest tier that completed."""
+    rec = _load(a.json_file, None)
+    if not rec or "id" not in rec or "tier" not in rec:
+        sys.exit(f"not a result record: {a.json_file}")
+    lab = _load(_p(a.run_dir, "lab.json"), {})
+    order = _tier_order(lab)
+    prim = ((lab.get("metrics") or {}).get("primary") or {}).get("name")
+    with _locked(a.run_dir):
+        hp = _p(a.run_dir, "hypotheses.json")
+        hyps = _load(hp, [])
+        hit = next((x for x in hyps if x["id"] == rec["id"]), None)
+        if not hit:
+            sys.exit(f"unknown id: {rec['id']}")
+        ev = hit.setdefault("experiments", {})
+        ev[rec["tier"]] = {"status": rec.get("status"), "verdict": rec.get("verdict"),
+                           "value": (rec.get("metrics") or {}).get(prim),
+                           "improvement": rec.get("improvement"), "target_met": rec.get("target_met"),
+                           "result": os.path.relpath(os.path.abspath(a.json_file), os.path.abspath(a.run_dir))}
+        done = [t for t in ev if ev[t].get("status") == "done"]
+        if done:
+            hit["empirical_status"] = max(done, key=lambda t: order.index(t) if t in order else -1)
+        else:
+            hit.setdefault("empirical_status", "unvalidated")
+        _save(hp, hyps)
+    print(f"{rec['id']}: {rec['tier']} {rec.get('status')} verdict={rec.get('verdict')} "
+          f"-> empirical_status={hit['empirical_status']}")
+
+
+def cmd_lab_status(a):
+    """Deterministic stop/continue decision for the lab loop: target reached, round cap, experiment
+    budget, or plateau. Prints JSON. With --record, stores this round's best in progress.json."""
+    lab = _load(_p(a.run_dir, "lab.json"), {})
+    stop = lab.get("stop") or {}
+    hyps = _load(_p(a.run_dir, "hypotheses.json"), [])
+    order = _tier_order(lab)
+    prim = (lab.get("metrics") or {}).get("primary") or {}
+    goal = prim.get("goal", "max")
+    target = stop.get("target")
+    target_tier = stop.get("target_tier") or (order[-1] if order else None)
+    exp_dir = _p(a.run_dir, "experiments")
+    base = _load(os.path.join(exp_dir, f"baseline.{target_tier}.json"), {}) if target_tier else {}
+    noise = max(float(lab.get("noise") or 0), float(base.get("noise") or 0))
+
+    def beats(x, y):
+        return (x > y) if goal == "max" else (x < y)
+
+    best = None
+    n_exp = 0
+    for h in hyps:
+        for tier, r in (h.get("experiments") or {}).items():
+            n_exp += 1
+            v = r.get("value")
+            if tier != target_tier or r.get("status") != "done" or v is None:
+                continue
+            if r.get("verdict") == "regresses-guardrail":
+                continue  # a guardrail-breaking result can't count as reaching the target
+            if best is None or beats(v, best["value"]):
+                best = {"id": h["id"], "tier": tier, "value": v, "summary": h.get("summary", "")}
+    live = [h for h in hyps if h.get("status") != "rejected"]
+    top_elo = max((h.get("elo", START_ELO) for h in live), default=START_ELO)
+
+    pp = _p(a.run_dir, "progress.json")
+    prog = _load(pp, {"history": []})
+    hist = prog.get("history", [])
+    rnd = a.round if a.round is not None else (hist[-1]["round"] if hist else 0)
+    if a.record:
+        if a.round is None:
+            sys.exit("--record needs --round N")
+        with _locked(a.run_dir):
+            prog = _load(pp, {"history": []})
+            hist = [x for x in prog.get("history", []) if x["round"] != a.round]
+            hist.append({"round": a.round, "best_value": best and best["value"],
+                         "best_id": best and best["id"], "top_elo": top_elo, "experiments": n_exp})
+            hist.sort(key=lambda x: x["round"])
+            prog["history"] = hist
+            _save(pp, prog)
+
+    reasons, stop_now = [], False
+    bval = (base.get("metrics") or {}).get(prim.get("name")) if base else None
+    target_met = best is not None and target is not None and not beats(float(target), best["value"])
+    if target_met:
+        reasons.append(f"target {target} reached by {best['id']} ({best['value']:g}, {target_tier})")
+        if stop.get("stop_on_target", True):
+            stop_now = True
+    max_rounds = stop.get("max_rounds")
+    if max_rounds and rnd >= max_rounds:
+        reasons.append(f"round cap reached ({rnd}/{max_rounds})")
+        stop_now = True
+    max_exp = stop.get("max_experiments")
+    if max_exp and n_exp >= max_exp:
+        reasons.append(f"experiment budget used ({n_exp}/{max_exp})")
+        stop_now = True
+    k = stop.get("plateau_rounds")
+    if k and len(hist) > k:
+        now, then = hist[-1], hist[-1 - k]
+        if lab.get("mode") == "reasoning" or now["best_value"] is None or then["best_value"] is None:
+            gain = (now["top_elo"] or 0) - (then["top_elo"] or 0)
+            if gain < float(stop.get("elo_plateau_delta", 10)):
+                reasons.append(f"top Elo plateaued (+{gain:g} over {k} rounds)")
+                stop_now = True
+        else:
+            gain = (now["best_value"] - then["best_value"]) * (1 if goal == "max" else -1)
+            if gain <= noise:
+                reasons.append(f"best {prim.get('name')} plateaued ({gain:+g} over {k} rounds, noise {noise:g})")
+                stop_now = True
+    if not reasons:
+        reasons.append("no stop condition met")
+
+    progress_pct = None
+    if best and target is not None and bval is not None and float(target) != bval:
+        progress_pct = round(100 * (best["value"] - bval) / (float(target) - bval), 1)
+    print(json.dumps({"decision": "stop" if stop_now else "continue", "reasons": reasons,
+                      "round": rnd, "max_rounds": max_rounds, "metric": prim.get("name"), "goal": goal,
+                      "baseline": bval, "target": target, "target_tier": target_tier, "best": best,
+                      "progress_to_target_pct": progress_pct, "experiments_run": n_exp,
+                      "max_experiments": max_exp, "top_elo": top_elo, "noise": noise}, indent=2))
 
 
 def main():
@@ -221,6 +360,10 @@ def main():
     p.add_argument("--origin", default="generation"); p.set_defaults(fn=cmd_ingest)
     p = sub.add_parser("proximity"); p.add_argument("run_dir"); p.add_argument("json_file"); p.set_defaults(fn=cmd_proximity)
     p = sub.add_parser("rank"); p.add_argument("run_dir"); p.add_argument("--top", type=int, default=0); p.set_defaults(fn=cmd_rank)
+    p = sub.add_parser("ingest-experiment"); p.add_argument("run_dir"); p.add_argument("json_file")
+    p.set_defaults(fn=cmd_ingest_experiment)
+    p = sub.add_parser("lab-status"); p.add_argument("run_dir"); p.add_argument("--round", type=int)
+    p.add_argument("--record", action="store_true"); p.set_defaults(fn=cmd_lab_status)
     a = ap.parse_args()
     a.fn(a)
 
